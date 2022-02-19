@@ -1,0 +1,19 @@
+package com.easy.request.constant;
+
+public enum EnumResScheme {
+
+    EMPTY,
+    JSON,
+    XML,
+    STRING,
+    INPUT_STREAM,
+    CUSTOM;
+
+    public boolean isEmpty() {
+        return EMPTY.equals(this);
+    }
+
+    public boolean isNotEmpty() {
+        return !isEmpty();
+    }
+}
