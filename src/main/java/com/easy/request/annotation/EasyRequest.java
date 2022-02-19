@@ -19,11 +19,11 @@ public @interface EasyRequest {
 
     EnumMethod method() default EnumMethod.GET;
 
-    EnumReqScheme reqScheme() default EnumReqScheme.EMPTY;
+    EnumReqScheme requestScheme() default EnumReqScheme.EMPTY;
 
-    String reqCharset() default "";
+    String requestCharset() default "";
 
-    EnumResScheme resScheme() default EnumResScheme.EMPTY;
+    EnumResScheme responseScheme() default EnumResScheme.EMPTY;
 
     String responseCharset() default "";
 

@@ -15,7 +15,7 @@ public @interface GET {
 
     String value() default "";
 
-    String resCharset() default "";
+    String responseCharset() default "";
 
     EnumResScheme responseScheme() default EnumResScheme.EMPTY;
 

@@ -18,9 +18,11 @@ public @interface PUT {
 
     EnumReqScheme requestScheme() default EnumReqScheme.EMPTY;
 
-    String responseCharset() default "";
+    String requestCharset() default "";
 
     EnumResScheme responseScheme() default EnumResScheme.EMPTY;
+
+    String responseCharset() default "";
 
     long timeout() default -1L;
 
