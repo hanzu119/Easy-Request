@@ -24,7 +24,7 @@ public class ApacheJsonResolver implements Resolver {
     }
 
     @Override
-    public StringEntity resolver(EasyClientRequest request, Object requestBody) {
+    public StringEntity resolve(EasyClientRequest request, Object requestBody) {
         return new StringEntity(JSON.toJSONString(requestBody), ContentType.create(request.getContentType(), request.getRequestCharset()));
     }
 }

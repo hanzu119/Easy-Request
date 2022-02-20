@@ -4,5 +4,5 @@ import com.easy.request.client.EasyClientRequest;
 
 public interface Resolver {
 
-    Object resolver(EasyClientRequest request, Object requestBody);
+    Object resolve(EasyClientRequest request, Object requestBody);
 }
