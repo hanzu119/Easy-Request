@@ -81,11 +81,11 @@ public class EasyInvocation implements InvocationHandler {
         Objects.requireNonNull(request, "EasyClientRequest can't be null when clientRequestFactory build easyClientRequest.");
         dealHttp(method, request);
         dealEasyRequest(method, request);
-        Object requesequestBody = dealParam(request, method, args);
+        Object requestBody = dealParam(request, method, args);
         dealPath(request);
         EnumReqScheme reqScheme = request.getRequestScheme();
         Resolver resolver = resolverFactory.build(reqScheme);
-        Object requestEntity = resolver.resolve(request, requesequestBody);
+        Object requestEntity = resolver.resolve(request, requestBody);
         InputStream inputStream = sendRequest(request, requestEntity);
         Object response = dealResponse(request.getResScheme(), inputStream, Charset.forName(request.getRequestCharset()), method);
         call(easyInterceptor -> easyInterceptor.onReceive(request, response));
