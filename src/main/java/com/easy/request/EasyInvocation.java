@@ -83,7 +83,7 @@ public class EasyInvocation implements InvocationHandler {
         dealEasyRequest(method, request);
         Object requestBody = dealParam(request, method, args);
         dealPath(request);
-        EnumReqScheme reqScheme = request.getRequestScheme();
+        EnumReqScheme reqScheme = request.getReqScheme();
         Resolver resolver = resolverFactory.build(reqScheme);
         Object requestEntity = resolver.resolve(request, requestBody);
         InputStream inputStream = sendRequest(request, requestEntity);

@@ -14,7 +14,7 @@ public interface EasyClientRequest {
         return null;
     }
 
-    default EnumReqScheme getRequestScheme() {
+    default EnumReqScheme getReqScheme() {
         return null;
     }
 

@@ -91,7 +91,7 @@ public class ApacheClient implements EasyRequestClient {
         FutureAdapter fa = new FutureAdapter();
         this.httpAsyncClient.execute(requestBase, fa);
         try {
-            HttpResponse response = fa.cf.get(timeout, TimeUnit.MICROSECONDS);
+            HttpResponse response = fa.cf.get(timeout, TimeUnit.MILLISECONDS);
             StatusLine statusLine = response.getStatusLine();
             if (HttpURLConnection.HTTP_OK != statusLine.getStatusCode()) {
                 throw new RuntimeException(statusLine.getStatusCode() + " " + statusLine.getReasonPhrase() + " " +

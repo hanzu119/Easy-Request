@@ -13,8 +13,8 @@ public class DefaultClientRequest implements EasyClientRequest {
 
     private EnumMethod method;
     private String protocol;
-    private EnumReqScheme reqScheme;
-    private String requestCharset;
+    private EnumReqScheme reqScheme = EnumReqScheme.EMPTY;
+    private String requestCharset = "utf-8";
     private long timeout = -1;
     private String host;
     private Integer port = -1;
