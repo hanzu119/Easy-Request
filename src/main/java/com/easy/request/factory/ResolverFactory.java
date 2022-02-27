@@ -1,6 +1,7 @@
 package com.easy.request.factory;
 
 import com.easy.request.constant.EnumReqScheme;
+import com.easy.request.parse.req.ApacheFileResolver;
 import com.easy.request.parse.req.ApacheFormResolver;
 import com.easy.request.parse.req.ApacheJsonResolver;
 import com.easy.request.parse.req.Resolver;
@@ -15,6 +16,9 @@ public class ResolverFactory {
         if (EnumReqScheme.FORM.equals(scheme)) {
             return buildFormResolver();
         }
+        if (EnumReqScheme.FILE.equals(scheme)) {
+            return buildFileResolver();
+        }
         throw new RuntimeException("Illegal request scheme.");
     }
 
@@ -24,6 +28,10 @@ public class ResolverFactory {
 
     protected Resolver buildFormResolver() {
         return ApacheFormResolver.getInstance();
+    }
+
+    protected Resolver buildFileResolver() {
+        return ApacheFileResolver.getInstance();
     }
 
 }

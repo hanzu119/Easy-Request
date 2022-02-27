@@ -176,10 +176,7 @@ public class EasyInvocation implements InvocationHandler {
             if (header.isIgnore()) {
                 return;
             }
-            if (StringUtils.isNotBlank(header.name())) {
-                key = header.name();
-            }
-            key = StringUtils.defaultIfBlank(header.value(), key);
+            key = StringUtils.defaultIfBlank(header.name(), header.value());
         }
         if (StringUtils.isBlank(key)) {
             if (arg instanceof Map) {

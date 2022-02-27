@@ -1,6 +1,7 @@
 package com.easy.request.client;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -30,6 +31,8 @@ import java.util.stream.Collectors;
 
 
 public class ApacheClient implements EasyRequestClient {
+
+    private Header cookie = null;
 
     private final CloseableHttpAsyncClient httpAsyncClient;
 
@@ -92,6 +95,7 @@ public class ApacheClient implements EasyRequestClient {
         this.httpAsyncClient.execute(requestBase, fa);
         try {
             HttpResponse response = fa.cf.get(timeout, TimeUnit.MILLISECONDS);
+            this.cookie = response.getFirstHeader("Set-Cookie");
             StatusLine statusLine = response.getStatusLine();
             if (HttpURLConnection.HTTP_OK != statusLine.getStatusCode()) {
                 throw new RuntimeException(statusLine.getStatusCode() + " " + statusLine.getReasonPhrase() + " " +
@@ -151,4 +155,12 @@ public class ApacheClient implements EasyRequestClient {
             throw new RuntimeException("failed to shutdown http client.", e);
         }
     }
+
+    public String getCookie() {
+        if (this.cookie == null) {
+            return null;
+        }
+        return this.cookie.getValue();
+    }
+
 }
