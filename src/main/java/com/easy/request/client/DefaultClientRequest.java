@@ -26,6 +26,7 @@ public class DefaultClientRequest implements EasyClientRequest {
     private Map<String, String> headers;
     private Map<String, Object> cookies;
     private Map<String, Object> hookParams;
+    private Boolean recordOrigin;
 
     public DefaultClientRequest() {
         this.params = new HashMap<>();

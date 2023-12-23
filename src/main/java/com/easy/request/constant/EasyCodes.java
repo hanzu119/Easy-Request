@@ -5,5 +5,6 @@ public interface EasyCodes {
     String DEFAULT_CHARSET = "utf-8";
     String PATH_SPLIT = "/";
     String REPEAT_SPLIT = "//";
+    String PROXY_HOOK = "proxyHook";
 
 }

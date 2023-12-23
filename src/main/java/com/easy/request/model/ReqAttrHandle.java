@@ -1,6 +1,12 @@
 package com.easy.request.model;
 
-import com.easy.request.annotation.*;
+import com.easy.request.annotation.DELETE;
+import com.easy.request.annotation.GET;
+import com.easy.request.annotation.POST;
+import com.easy.request.annotation.PUT;
+import com.easy.request.annotation.PathVariable;
+import com.easy.request.annotation.RecordOrigin;
+import com.easy.request.annotation.Request;
 import com.easy.request.client.EasyClientRequest;
 import com.easy.request.constant.EasyCodes;
 import com.easy.request.constant.EnumMethod;
@@ -22,6 +28,10 @@ public class ReqAttrHandle {
         POST post = method.getAnnotation(POST.class);
         PUT put = method.getAnnotation(PUT.class);
         DELETE delete = method.getAnnotation(DELETE.class);
+
+        RecordOrigin interfaceRecord = interfaceClass.getAnnotation(RecordOrigin.class);
+        RecordOrigin methodRecord = method.getAnnotation(RecordOrigin.class);
+        dealRecordOrigin(interfaceRecord, methodRecord);
 
         dealInterfaceRequest(interfaceEasyRequest);
         if (methodEasyRequest != null) {
@@ -62,6 +72,7 @@ public class ReqAttrHandle {
         request.setResponseCharset(model.getResCharset());
         request.setTimeout(model.getTimeout());
         request.setContentType(model.getContentType());
+        request.setRecordOrigin(model.getRecordOrigin());
     }
 
     private void dealInterfaceRequest(Request interfaceEasyRequest) {
@@ -118,6 +129,15 @@ public class ReqAttrHandle {
         appendPath(delete.path(), delete.value());
         fillRequestInfo(EnumReqScheme.FORM, EasyCodes.DEFAULT_CHARSET, delete.responseScheme(), delete.responseCharset());
 
+    }
+
+    private void dealRecordOrigin(RecordOrigin infc, RecordOrigin method) {
+        if (infc != null) {
+            model.setRecordOrigin(infc.enable());
+        }
+        if (method != null) {
+            model.setRecordOrigin(method.enable());
+        }
     }
 
     private void fillRequestInfo(EnumReqScheme reqScheme, String reqCharset, EnumResScheme resScheme, String resCharset) {

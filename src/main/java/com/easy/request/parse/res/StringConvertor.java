@@ -1,10 +1,11 @@
 package com.easy.request.parse.res;
 
+import com.easy.request.client.EasyClientRequest;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 
 public class StringConvertor implements Convertor {
@@ -25,13 +26,13 @@ public class StringConvertor implements Convertor {
         return INSTANCE;
     }
 
-
     @Override
-    public Object convert(InputStream input, Charset charset, Method method) {
+    public Object convert(InputStream input, EasyClientRequest request, Type returnType) {
         try {
-            return IOUtils.toString(input, charset);
+            return IOUtils.toString(input, Charset.forName(request.getRequestCharset()));
         } catch (IOException e) {
             throw new RuntimeException("io error");
         }
     }
+
 }

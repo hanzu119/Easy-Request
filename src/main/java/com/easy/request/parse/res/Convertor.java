@@ -1,9 +1,10 @@
 package com.easy.request.parse.res;
 
+import com.easy.request.client.EasyClientRequest;
+
 import java.io.InputStream;
-import java.lang.reflect.Method;
-import java.nio.charset.Charset;
+import java.lang.reflect.Type;
 
 public interface Convertor {
-    Object convert(InputStream input, Charset charset, Method method);
+    Object convert(InputStream input, EasyClientRequest request, Type returnType);
 }

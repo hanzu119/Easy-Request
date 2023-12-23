@@ -15,6 +15,7 @@ public class ReqAttrModel {
     private String resCharset = "utf-8";
     private long timeout = 3000L;
     private String contentType;
+    private Boolean recordOrigin = false;
 
     public void setTimeout(long timeout) {
         if (timeout > 0) {

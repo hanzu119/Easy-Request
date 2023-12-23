@@ -1,11 +1,12 @@
 package com.easy.request.parse.res;
 
 import com.alibaba.fastjson.JSON;
+import com.easy.request.client.EasyClientRequest;
 import com.easy.request.constant.EasyCodes;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 
 public class JsonConvertor implements Convertor {
@@ -26,13 +27,13 @@ public class JsonConvertor implements Convertor {
         return INSTANCE;
     }
 
-
     @Override
-    public Object convert(InputStream input, Charset charset, Method method) {
+    public Object convert(InputStream input, EasyClientRequest request, Type returnType) {
         try {
-            return JSON.parseObject(input, charset, method.getGenericReturnType());
+            return JSON.parseObject(input, Charset.forName(request.getResponseCharset()), returnType);
         } catch (IOException e) {
             throw new RuntimeException(EasyCodes.PARSE_ERROR, e);
         }
     }
+
 }

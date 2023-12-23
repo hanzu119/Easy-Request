@@ -70,4 +70,8 @@ public interface EasyClientRequest {
 
     void setPath(String path);
 
+    Boolean getRecordOrigin();
+
+    void setRecordOrigin(Boolean recordOrigin);
+
 }

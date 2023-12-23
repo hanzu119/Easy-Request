@@ -1,11 +1,21 @@
 package com.easy.request;
 
-import com.easy.request.annotation.*;
+import com.easy.request.annotation.HEADER;
+import com.easy.request.annotation.HOST;
+import com.easy.request.annotation.HTTP;
+import com.easy.request.annotation.HookParam;
+import com.easy.request.annotation.PathVariable;
+import com.easy.request.annotation.RequestBody;
+import com.easy.request.annotation.RequestParam;
 import com.easy.request.client.ApacheClient;
 import com.easy.request.client.DefaultClientRequest;
 import com.easy.request.client.EasyClientRequest;
 import com.easy.request.client.EasyRequestClient;
-import com.easy.request.constant.*;
+import com.easy.request.constant.EasyCodes;
+import com.easy.request.constant.EnumMethod;
+import com.easy.request.constant.EnumProtocol;
+import com.easy.request.constant.EnumReqScheme;
+import com.easy.request.constant.EnumResScheme;
 import com.easy.request.factory.ConvertorFactory;
 import com.easy.request.factory.EasyClientRequestFactory;
 import com.easy.request.factory.ResolverFactory;
@@ -31,7 +41,7 @@ import java.util.stream.Collectors;
 
 public class EasyInvocation implements InvocationHandler {
 
-    public static final String SERIAL_VERSION_UID = "seriaVersionUID";
+    public static final String SERIAL_VERSION_UID = "serialVersionUID";
     public static final int CLASS_DEEP = 3;
 
     private final Class<?> interfaceClass;
