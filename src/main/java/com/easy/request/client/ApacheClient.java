@@ -1,21 +1,16 @@
 package com.easy.request.client;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.*;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.concurrent.FutureCallback;
-import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
-import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.apache.http.impl.client.BasicCookieStore;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.nio.reactor.ConnectingIOReactor;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,36 +19,20 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 
 public class ApacheClient implements EasyRequestClient {
 
-    private Header cookie = null;
-
-    private final CloseableHttpAsyncClient httpAsyncClient;
+    private final CloseableHttpClient httpClient;
 
     public ApacheClient() {
-        try {
-            IOReactorConfig ioReactorConfig = IOReactorConfig.custom().setIoThreadCount(2).build();
-            ConnectingIOReactor ioReactor = new DefaultConnectingIOReactor(ioReactorConfig);
-            PoolingNHttpClientConnectionManager cm = new PoolingNHttpClientConnectionManager(ioReactor);
-            cm.setMaxTotal(300);
-            cm.setDefaultMaxPerRoute(300);
-            httpAsyncClient = HttpAsyncClientBuilder.create().setConnectionManager(cm).setDefaultRequestConfig(
-                            RequestConfig.custom().setConnectionRequestTimeout(16 * 1000).setSocketTimeout(30 * 1000).build())
-                    .setUserAgent("Apache").build();
-            httpAsyncClient.start();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+
+        httpClient = HttpClientBuilder.create().setDefaultCookieStore(new BasicCookieStore()).build();
     }
 
-    public ApacheClient(CloseableHttpAsyncClient httpAsyncClient) {
-        this.httpAsyncClient = httpAsyncClient;
+    public ApacheClient(CloseableHttpClient client) {
+        this.httpClient = client;
     }
 
     private URIBuilder convert(EasyClientRequest request) {
@@ -90,12 +69,9 @@ public class ApacheClient implements EasyRequestClient {
         }
     }
 
-    public InputStream execute(long timeout, HttpRequestBase requestBase) {
-        FutureAdapter fa = new FutureAdapter();
-        this.httpAsyncClient.execute(requestBase, fa);
+    public InputStream execute(HttpRequestBase requestBase) {
         try {
-            HttpResponse response = fa.cf.get(timeout, TimeUnit.MILLISECONDS);
-            this.cookie = response.getFirstHeader("Set-Cookie");
+            HttpResponse response = this.httpClient.execute(requestBase);
             StatusLine statusLine = response.getStatusLine();
             if (HttpURLConnection.HTTP_OK != statusLine.getStatusCode()) {
                 throw new RuntimeException(statusLine.getStatusCode() + " " + statusLine.getReasonPhrase() + " " +
@@ -104,12 +80,6 @@ public class ApacheClient implements EasyRequestClient {
             return response.getEntity().getContent();
         } catch (IOException e) {
             throw new RuntimeException("io error", e);
-        } catch (ExecutionException e) {
-            throw new RuntimeException("execution error", e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException("interrupted error", e);
-        } catch (TimeoutException e) {
-            throw new RuntimeException("time out error", e);
         }
     }
 
@@ -119,7 +89,7 @@ public class ApacheClient implements EasyRequestClient {
         HttpPost post = new HttpPost(builder.toString());
         request.getHeaders().forEach(post::addHeader);
         post.setEntity((HttpEntity) requestEntity);
-        return execute(request.getTimeout(), post);
+        return execute(post);
     }
 
     @Override
@@ -128,7 +98,7 @@ public class ApacheClient implements EasyRequestClient {
         HttpPut put = new HttpPut(builder.toString());
         request.getHeaders().forEach(put::addHeader);
         put.setEntity((HttpEntity) requestEntity);
-        return execute(request.getTimeout(), put);
+        return execute(put);
     }
 
     @Override
@@ -136,7 +106,7 @@ public class ApacheClient implements EasyRequestClient {
         URIBuilder builder = convert(request);
         HttpDelete delete = new HttpDelete(builder.toString());
         request.getHeaders().forEach(delete::addHeader);
-        return execute(request.getTimeout(), delete);
+        return execute(delete);
     }
 
     @Override
@@ -144,23 +114,16 @@ public class ApacheClient implements EasyRequestClient {
         URIBuilder builder = convert(request);
         HttpGet get = new HttpGet(builder.toString());
         request.getHeaders().forEach(get::addHeader);
-        return execute(request.getTimeout(), get);
+        return execute(get);
     }
 
     @Override
     public void shutdown() {
         try {
-            this.httpAsyncClient.close();
+            this.httpClient.close();
         } catch (IOException e) {
             throw new RuntimeException("failed to shutdown http client.", e);
         }
-    }
-
-    public String getCookie() {
-        if (this.cookie == null) {
-            return null;
-        }
-        return this.cookie.getValue();
     }
 
 }

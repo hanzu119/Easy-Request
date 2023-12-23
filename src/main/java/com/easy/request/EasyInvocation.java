@@ -94,8 +94,8 @@ public class EasyInvocation implements InvocationHandler {
 
     private Object dealParam(EasyClientRequest request, Method method, Object[] args) {
         Map<String, String> urlParams = request.getParams();
-        dealFixedRequestParam(this.interfaceClass.getAnnotation(EasyRequestParam.class), urlParams);
-        dealFixedRequestParam(method.getAnnotation(EasyRequestParam.class), urlParams);
+        dealFixedRequestParam(this.interfaceClass.getAnnotation(RequestParam.class), urlParams);
+        dealFixedRequestParam(method.getAnnotation(RequestParam.class), urlParams);
         Annotation[][] parameterAnnotations = method.getParameterAnnotations();
         Object requestBody = null;
         for (int i = 0; i < parameterAnnotations.length; i++) {
@@ -111,16 +111,16 @@ public class EasyInvocation implements InvocationHandler {
                 continue;
             }
             for (Annotation annotation : parameterAnnotation) {
-                if (annotation instanceof EasyRequestBody) {
+                if (annotation instanceof RequestBody) {
                     requestBody = arg;
-                } else if (annotation instanceof EasyRequestParam) {
-                    dealEasyRequestParam(urlParams, arg, (EasyRequestParam) annotation);
+                } else if (annotation instanceof RequestParam) {
+                    dealEasyRequestParam(urlParams, arg, (RequestParam) annotation);
                 } else if (annotation instanceof HookParam) {
                     dealEasyHookParam(request, arg, (HookParam) annotation);
                 } else if (annotation instanceof HEADER) {
                     dealEasyHeader(request, arg, (HEADER) annotation);
-                } else if (annotation instanceof EasyPathVariable) {
-                    dealEasyPathValue(request, arg, (EasyPathVariable) annotation);
+                } else if (annotation instanceof PathVariable) {
+                    dealEasyPathValue(request, arg, (PathVariable) annotation);
                 } else if (annotation instanceof HOST) {
                     dealEasyHost(request, arg, (HOST) annotation);
                 }
@@ -139,7 +139,7 @@ public class EasyInvocation implements InvocationHandler {
     private static void dealEasyHeader(EasyClientRequest request, Object arg, HEADER header) {
         Map<String, String> headers = request.getHeaders();
         if (header.isObject()) {
-            List<Field> fields = collectField(arg, header.ignoreSerialNUmber());
+            List<Field> fields = collectField(arg, header.ignoreSerialNumber());
             for (Field field : fields) {
                 try {
                     String fieldName = field.getName();
@@ -157,7 +157,7 @@ public class EasyInvocation implements InvocationHandler {
         }
     }
 
-    private static void dealEasyPathValue(EasyClientRequest request, Object arg, EasyPathVariable pathVariable) {
+    private static void dealEasyPathValue(EasyClientRequest request, Object arg, PathVariable pathVariable) {
         String name = StringUtils.defaultIfBlank(pathVariable.name(), pathVariable.value());
         if (StringUtils.isBlank(name)) {
             throw new RuntimeException("@EasyPathVariable's name or value can't be blank at the same time.");
@@ -203,13 +203,13 @@ public class EasyInvocation implements InvocationHandler {
         }
     }
 
-    private void dealEasyRequestParam(Map<String, String> urlParams, Object arg, EasyRequestParam annotation) {
+    private void dealEasyRequestParam(Map<String, String> urlParams, Object arg, RequestParam annotation) {
         if (annotation.isObject()) {
             List<Field> fields = collectField(arg, annotation.ignoreSerialNumber());
             for (Field field : fields) {
                 try {
                     String fieldName = field.getName();
-                    EasyRequestParam fieldAnnotation = field.getAnnotation(EasyRequestParam.class);
+                    RequestParam fieldAnnotation = field.getAnnotation(RequestParam.class);
                     Object value = field.get(arg);
                     if (value != null) {
                         fillUrlParams(urlParams, fieldName, value, fieldAnnotation);
@@ -230,7 +230,7 @@ public class EasyInvocation implements InvocationHandler {
 
     private static List<Field> collectField(Object paramObject, boolean ignoreSerialNumber) {
         Class<?> objectClass = paramObject.getClass();
-        Field[] fields = objectClass.getFields();
+        Field[] fields = objectClass.getDeclaredFields();
         for (int i = 0; i < CLASS_DEEP; i++) {
             objectClass = objectClass.getSuperclass();
             if (objectClass == null) {
@@ -255,7 +255,7 @@ public class EasyInvocation implements InvocationHandler {
                 .peek(field -> field.setAccessible(true)).collect(Collectors.toList());
     }
 
-    private void fillUrlParams(Map<String, String> urlParams, String key, Object arg, EasyRequestParam easyRequestParam) {
+    private void fillUrlParams(Map<String, String> urlParams, String key, Object arg, RequestParam easyRequestParam) {
         if (easyRequestParam != null) {
             if (easyRequestParam.isIgnore()) {
                 return;
@@ -264,11 +264,11 @@ public class EasyInvocation implements InvocationHandler {
                 key = easyRequestParam.name()[0];
             }
             key = StringUtils.defaultIfBlank(easyRequestParam.value(), key);
-            if (StringUtils.isBlank(key)) {
-                throw new RuntimeException("you should appoint name or value in your method's parameter.");
-            }
-            urlParams.put(key, String.valueOf(arg));
         }
+        if (StringUtils.isBlank(key)) {
+            throw new RuntimeException("you should appoint name or value in your method's parameter.");
+        }
+        urlParams.put(key, String.valueOf(arg));
     }
 
     public Object dealResponse(EnumResScheme resScheme, InputStream inputStream, Charset resCharset, Method method) {
@@ -343,7 +343,7 @@ public class EasyInvocation implements InvocationHandler {
         }
     }
 
-    private static void dealFixedRequestParam(EasyRequestParam requestParam, Map<String, String> params) {
+    private static void dealFixedRequestParam(RequestParam requestParam, Map<String, String> params) {
         if (requestParam == null) {
             return;
         }

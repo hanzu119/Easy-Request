@@ -15,9 +15,9 @@ public class ReqAttrHandle {
     private final ReqAttrModel model = new ReqAttrModel();
 
     private ReqAttrHandle(final Class<?> interfaceClass, Method method) {
-        EasyRequest interfaceEasyRequest = interfaceClass.getAnnotation(EasyRequest.class);
-        EasyPathVariable pathVariable = method.getAnnotation(EasyPathVariable.class);
-        EasyRequest methodEasyRequest = method.getAnnotation(EasyRequest.class);
+        Request interfaceEasyRequest = interfaceClass.getAnnotation(Request.class);
+        PathVariable pathVariable = method.getAnnotation(PathVariable.class);
+        Request methodEasyRequest = method.getAnnotation(Request.class);
         GET get = method.getAnnotation(GET.class);
         POST post = method.getAnnotation(POST.class);
         PUT put = method.getAnnotation(PUT.class);
@@ -64,7 +64,7 @@ public class ReqAttrHandle {
         request.setContentType(model.getContentType());
     }
 
-    private void dealInterfaceRequest(EasyRequest interfaceEasyRequest) {
+    private void dealInterfaceRequest(Request interfaceEasyRequest) {
         if (interfaceEasyRequest != null) {
             model.setTimeout(interfaceEasyRequest.timeout());
             url.append(StringUtils.defaultIfBlank(interfaceEasyRequest.path(), interfaceEasyRequest.value()));
@@ -74,7 +74,7 @@ public class ReqAttrHandle {
         }
     }
 
-    private void buildMethodRequest(EasyRequest methodEasyRequest) {
+    private void buildMethodRequest(Request methodEasyRequest) {
         model.setMethod(methodEasyRequest.method());
         model.setContentType(methodEasyRequest.contentType());
         model.setTimeout(methodEasyRequest.timeout());
@@ -142,7 +142,7 @@ public class ReqAttrHandle {
         }
     }
 
-    private void dealPath(EasyPathVariable pathVariable) {
+    private void dealPath(PathVariable pathVariable) {
         String path = url.toString();
         if (path.endsWith(EasyCodes.PATH_SPLIT)) {
             path = path.substring(0, path.length() - 1);

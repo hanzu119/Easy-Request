@@ -1,5 +1,6 @@
 package com.easy.request.annotation;
 
+import com.easy.request.constant.EnumMethod;
 import com.easy.request.constant.EnumReqScheme;
 import com.easy.request.constant.EnumResScheme;
 
@@ -10,6 +11,7 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
+@Request(method = EnumMethod.POST)
 public @interface POST {
 
     String path() default "";

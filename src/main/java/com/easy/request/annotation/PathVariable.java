@@ -5,15 +5,16 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ElementType.PARAMETER, ElementType.FIELD})
+/**
+ *
+ */
+@Target({ElementType.PARAMETER, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface HEADER {
+public @interface PathVariable {
 
     String name() default "";
 
     String value() default "";
 
-    boolean isIgnore() default false;
-
-    boolean ignoreSerialNumber() default true;
+    String fixedValue() default "";
 }

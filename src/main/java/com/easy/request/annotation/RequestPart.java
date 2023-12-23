@@ -7,5 +7,11 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface EasyRequestBody {
+public @interface RequestPart {
+
+    String value();
+
+    String contentType() default "";
+
+    String filenameSuffix() default "";
 }

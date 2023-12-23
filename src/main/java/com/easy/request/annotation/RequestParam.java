@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface EasyRequestParam {
+public @interface RequestParam {
 
     String[] name() default {};
 
@@ -15,10 +15,10 @@ public @interface EasyRequestParam {
 
     String[] fixedValue() default {};
 
-    boolean isObject() default false;
-
     boolean isIgnore() default false;
 
     boolean ignoreSerialNumber() default true;
+
+    boolean require() default false;
 
 }

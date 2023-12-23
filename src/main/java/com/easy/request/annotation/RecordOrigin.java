@@ -5,13 +5,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ElementType.PARAMETER, ElementType.METHOD})
+/**
+ * 记录原始数据
+ *
+ * @author AGPg
+ * @see
+ */
+@Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface EasyPathVariable {
-
-    String name() default "";
-
-    String value() default "";
-
-    String fixedValue() default "";
+public @interface RecordOrigin {
+    boolean enable() default true;
 }
