@@ -7,6 +7,7 @@ import com.easy.request.annotation.HookParam;
 import com.easy.request.annotation.PathVariable;
 import com.easy.request.annotation.RequestBody;
 import com.easy.request.annotation.RequestParam;
+import com.easy.request.annotation.RequestPart;
 import com.easy.request.client.ApacheClient;
 import com.easy.request.client.DefaultClientRequest;
 import com.easy.request.client.EasyClientRequest;
@@ -19,11 +20,14 @@ import com.easy.request.constant.EnumResScheme;
 import com.easy.request.factory.ConvertorFactory;
 import com.easy.request.factory.EasyClientRequestFactory;
 import com.easy.request.factory.ResolverFactory;
+import com.easy.request.model.EasyResponse;
 import com.easy.request.model.ReqAttrHandle;
 import com.easy.request.parse.req.RequestParamChecker;
 import com.easy.request.parse.req.Resolver;
+import com.easy.request.parse.req.apache.PartModel;
 import com.easy.request.parse.res.Convertor;
 import com.easy.request.util.StringUtils;
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +35,11 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.nio.charset.Charset;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +63,7 @@ public class EasyInvocation implements InvocationHandler {
     public EasyInvocation(Class<?> interfaceClass, EasyRequestClient client,
                           EasyClientRequestFactory clientRequestFactory, RequestParamChecker checker,
                           ResolverFactory resolverFactory, ConvertorFactory convertorFactory,
-                          EasyInterceptor[] interceptors) {
+                          EasyInterceptor... interceptors) {
         if (interfaceClass == null || !interfaceClass.isInterface()) {
             throw new RuntimeException("interface error");
         }
@@ -90,16 +98,50 @@ public class EasyInvocation implements InvocationHandler {
         EasyClientRequest request = clientRequestFactory.build();
         Objects.requireNonNull(request, "EasyClientRequest can't be null when clientRequestFactory build easyClientRequest.");
         dealHttp(method, request);
-        dealEasyRequest(method, request);
+        ReqAttrHandle.builder(this.interfaceClass, method).fillClientRequest(request);
         Object requestBody = dealParam(request, method, args);
         dealPath(request);
         EnumReqScheme reqScheme = request.getReqScheme();
         Resolver resolver = resolverFactory.build(reqScheme);
         Object requestEntity = resolver.resolve(request, requestBody);
-        InputStream inputStream = sendRequest(request, requestEntity);
-        Object response = dealResponse(request.getResScheme(), inputStream, Charset.forName(request.getRequestCharset()), method);
-        call(easyInterceptor -> easyInterceptor.onReceive(request, response));
-        return response;
+
+        EasyResponse easyResponse = sendRequest(request, requestEntity);
+        InputStream inputStream = (InputStream) easyResponse.getEntity();
+        int available = inputStream.available();
+        boolean assignableFrom = method.getReturnType().isAssignableFrom(EasyResponse.class);
+        Type type;
+        if (assignableFrom) {
+            type = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0];
+        } else {
+            type = method.getGenericReturnType();
+        }
+        EnumResScheme resScheme = request.getResScheme();
+        if (assignableFrom) {
+            if (available != 0) {
+                if (EnumResScheme.INPUT_STREAM.equals(resScheme)) {
+                    easyResponse.setEntity(inputStream);
+                } else {
+                    String requestCharset = request.getRequestCharset();
+                    if (request.getRecordOrigin()) {
+                        String origin = IOUtils.toString(inputStream, requestCharset);
+                        easyResponse.setOriginEntity(origin);
+                        easyResponse.setEntity(dealResponse(request, IOUtils.toInputStream(origin, requestCharset), type));
+                    } else {
+                        easyResponse.setEntity(dealResponse(request, inputStream, type));
+                    }
+                }
+            } else {
+                easyResponse.setEntity(null);
+            }
+            call(easyInterceptor -> easyInterceptor.onReceive(request, easyResponse));
+            return easyResponse;
+        }
+        if (HttpURLConnection.HTTP_OK != easyResponse.getCode()) {
+            throw new RuntimeException(easyResponse.getCode() + " " + easyResponse.getReason() + " " + IOUtils.toString(inputStream, StandardCharsets.UTF_8));
+        }
+        Object entity = available == 0 ? null : dealResponse(request, inputStream, type);
+        call(easyInterceptor -> easyInterceptor.onReceive(request, entity));
+        return entity;
     }
 
     private Object dealParam(EasyClientRequest request, Method method, Object[] args) {
@@ -133,6 +175,15 @@ public class EasyInvocation implements InvocationHandler {
                     dealEasyPathValue(request, arg, (PathVariable) annotation);
                 } else if (annotation instanceof HOST) {
                     dealEasyHost(request, arg, (HOST) annotation);
+                } else if (annotation instanceof RequestPart) {
+                    if (requestBody == null) {
+                        requestBody = new ArrayList<>();
+                    }
+                    if (requestBody instanceof List) {
+                        List<PartModel> list = (List<PartModel>) requestBody;
+                        RequestPart requestPart = (RequestPart) annotation;
+                        list.add(new PartModel(requestPart.value(), arg, requestPart.contentType(), requestPart.filenameSuffix()));
+                    }
                 }
             }
         }
@@ -148,7 +199,12 @@ public class EasyInvocation implements InvocationHandler {
 
     private static void dealEasyHeader(EasyClientRequest request, Object arg, HEADER header) {
         Map<String, String> headers = request.getHeaders();
-        if (header.isObject()) {
+        if (arg instanceof String || arg instanceof Number || arg instanceof Boolean) {
+            fillHeader(headers, null, arg, header);
+        } else if (arg instanceof Map) {
+            Map<?, ?> map = (Map<?, ?>) arg;
+            map.forEach((k, v) -> headers.put(String.valueOf(k), String.valueOf(v)));
+        } else {
             List<Field> fields = collectField(arg, header.ignoreSerialNumber());
             for (Field field : fields) {
                 try {
@@ -162,8 +218,6 @@ public class EasyInvocation implements InvocationHandler {
                     throw new RuntimeException("illegal access.", e);
                 }
             }
-        } else {
-            fillHeader(headers, null, arg, header);
         }
     }
 
@@ -186,7 +240,10 @@ public class EasyInvocation implements InvocationHandler {
             if (header.isIgnore()) {
                 return;
             }
-            key = StringUtils.defaultIfBlank(header.name(), header.value());
+            if (StringUtils.isNotBlank(header.name())) {
+                key = header.name();
+            }
+            key = StringUtils.defaultIfBlank(header.value(), key);
         }
         if (StringUtils.isBlank(key)) {
             if (arg instanceof Map) {
@@ -214,7 +271,12 @@ public class EasyInvocation implements InvocationHandler {
     }
 
     private void dealEasyRequestParam(Map<String, String> urlParams, Object arg, RequestParam annotation) {
-        if (annotation.isObject()) {
+        if (arg instanceof String || arg instanceof Number || arg instanceof Boolean) {
+            fillUrlParams(urlParams, null, arg, annotation);
+        } else if (arg instanceof Map) {
+            Map<?, ?> map = (Map<?, ?>) arg;
+            map.forEach((k, v) -> urlParams.put(String.valueOf(k), String.valueOf(v)));
+        } else {
             List<Field> fields = collectField(arg, annotation.ignoreSerialNumber());
             for (Field field : fields) {
                 try {
@@ -227,13 +289,6 @@ public class EasyInvocation implements InvocationHandler {
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException("illegal access.", e);
                 }
-            }
-        } else {
-            if (arg instanceof Map) {
-                Map<?, ?> map = (Map<?, ?>) arg;
-                map.forEach((k, v) -> urlParams.put(String.valueOf(k), String.valueOf(v)));
-            } else {
-                fillUrlParams(urlParams, null, arg, annotation);
             }
         }
     }
@@ -261,28 +316,39 @@ public class EasyInvocation implements InvocationHandler {
                 }
             }
         }
-        return Arrays.stream(fields).filter(field -> !ignoreSerialNumber || !SERIAL_VERSION_UID.equals(field.getName()))
-                .peek(field -> field.setAccessible(true)).collect(Collectors.toList());
+        return Arrays.stream(fields)
+                .filter(field -> !ignoreSerialNumber || !SERIAL_VERSION_UID.equals(field.getName()))
+                .peek(field -> field.setAccessible(true))
+                .collect(Collectors.toList());
     }
 
-    private void fillUrlParams(Map<String, String> urlParams, String key, Object arg, RequestParam easyRequestParam) {
-        if (easyRequestParam != null) {
-            if (easyRequestParam.isIgnore()) {
+    private void fillUrlParams(Map<String, String> urlParams, String key, Object arg, RequestParam requestParam) {
+        if (requestParam == null && arg == null) {
+            return;
+        }
+        if (requestParam != null) {
+            if (requestParam.isIgnore()) {
                 return;
             }
-            if (easyRequestParam.name().length == 1 && StringUtils.isNotBlank(easyRequestParam.name()[0])) {
-                key = easyRequestParam.name()[0];
+            if (requestParam.name().length == 1 && StringUtils.isNotBlank(requestParam.name()[0])) {
+                key = requestParam.name()[0];
             }
-            key = StringUtils.defaultIfBlank(easyRequestParam.value(), key);
+            key = StringUtils.defaultIfBlank(requestParam.value(), key);
         }
         if (StringUtils.isBlank(key)) {
             throw new RuntimeException("you should appoint name or value in your method's parameter.");
         }
+        if (arg == null) {
+            if (requestParam.require()) {
+                urlParams.put(key, StringUtils.EMPTY);
+            }
+            return;
+        }
         urlParams.put(key, String.valueOf(arg));
     }
 
-    public Object dealResponse(EnumResScheme resScheme, InputStream inputStream, Charset resCharset, Method method) {
-
+    public Object dealResponse(EasyClientRequest request, InputStream inputStream, Type returnType) {
+        EnumResScheme resScheme = request.getResScheme();
         if (EnumResScheme.INPUT_STREAM.equals(resScheme)) {
             return inputStream;
         }
@@ -290,7 +356,7 @@ public class EasyInvocation implements InvocationHandler {
         if (convertor == null) {
             throw new RuntimeException(resScheme.name() + " not mapping any convertor.");
         }
-        Object responseEntity = convertor.convert(inputStream, resCharset, method);
+        Object responseEntity = convertor.convert(inputStream, request, returnType);
         try {
             inputStream.close();
         } catch (IOException e) {
@@ -299,11 +365,7 @@ public class EasyInvocation implements InvocationHandler {
         return responseEntity;
     }
 
-    public void dealEasyRequest(Method method, EasyClientRequest request) {
-        ReqAttrHandle.builder(this.interfaceClass, method).fillClientRequest(request);
-    }
-
-    public InputStream sendRequest(EasyClientRequest request, Object requestEntity) {
+    public EasyResponse<InputStream> sendRequest(EasyClientRequest request, Object requestEntity) {
         call(easyInterceptor -> easyInterceptor.beforeRequest(request, requestEntity));
         EnumMethod method = request.getMethod();
         if (EnumMethod.GET.equals(method)) {
@@ -359,6 +421,9 @@ public class EasyInvocation implements InvocationHandler {
         }
         String[] names = requestParam.name();
         String[] values = requestParam.fixedValue();
+        if (names.length != values.length) {
+            throw new RuntimeException("names' array length must same as values' length.");
+        }
         for (int i = 0; i < names.length; i++) {
             params.put(names[i], values[i]);
         }
