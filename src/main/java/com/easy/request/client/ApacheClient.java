@@ -32,7 +32,6 @@ public class ApacheClient implements EasyRequestClient {
     private final CloseableHttpClient httpClient;
 
     public ApacheClient() {
-
         httpClient = HttpClientBuilder.create().setDefaultCookieStore(new BasicCookieStore()).build();
     }
 

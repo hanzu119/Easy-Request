@@ -23,6 +23,9 @@ public interface EasyRequestClient {
         throw new RuntimeException("not config get method");
     }
 
+    /**
+     * shutdown client
+     */
     default void shutdown() {
         throw new RuntimeException("not config shutdown method.");
     }
