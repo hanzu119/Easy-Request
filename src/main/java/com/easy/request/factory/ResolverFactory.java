@@ -1,12 +1,12 @@
 package com.easy.request.factory;
 
 import com.easy.request.constant.EnumReqScheme;
-import com.easy.request.parse.req.Resolver;
-import com.easy.request.parse.req.apache.ApacheFileResolver;
-import com.easy.request.parse.req.apache.ApacheFormResolver;
-import com.easy.request.parse.req.apache.ApacheJsonResolver;
-import com.easy.request.parse.req.apache.ApacheMultiFormResolver;
-import com.easy.request.parse.req.apache.ApacheXmlResolver;
+import com.easy.request.parse.request.Resolver;
+import com.easy.request.parse.request.apache.ApacheFileResolver;
+import com.easy.request.parse.request.apache.ApacheFormResolver;
+import com.easy.request.parse.request.apache.ApacheJsonResolver;
+import com.easy.request.parse.request.apache.ApacheMultiFormResolver;
+import com.easy.request.parse.request.apache.ApacheXmlResolver;
 
 public class ResolverFactory {
 

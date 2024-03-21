@@ -1,8 +1,8 @@
-package com.easy.request.parse.req.apache;
+package com.easy.request.parse.request.apache;
 
 import com.alibaba.fastjson.JSON;
 import com.easy.request.client.EasyClientRequest;
-import com.easy.request.parse.req.Resolver;
+import com.easy.request.parse.request.Resolver;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 

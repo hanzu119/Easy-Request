@@ -1,7 +1,7 @@
-package com.easy.request.parse.req.apache;
+package com.easy.request.parse.request.apache;
 
 import com.easy.request.client.EasyClientRequest;
-import com.easy.request.parse.req.Resolver;
+import com.easy.request.parse.request.Resolver;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.http.entity.BufferedHttpEntity;

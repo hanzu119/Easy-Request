@@ -1,4 +1,4 @@
-package com.easy.request.parse.req;
+package com.easy.request.parse.request;
 
 import com.easy.request.client.EasyClientRequest;
 

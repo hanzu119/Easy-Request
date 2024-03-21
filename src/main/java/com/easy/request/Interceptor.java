@@ -2,7 +2,7 @@ package com.easy.request;
 
 import com.easy.request.client.EasyClientRequest;
 
-public interface EasyInterceptor {
+public interface Interceptor {
 
     default void beforeRequest(EasyClientRequest request, Object requestEntity) {
     }

@@ -22,10 +22,10 @@ import com.easy.request.factory.EasyClientRequestFactory;
 import com.easy.request.factory.ResolverFactory;
 import com.easy.request.model.EasyResponse;
 import com.easy.request.model.ReqAttrHandle;
-import com.easy.request.parse.req.RequestParamChecker;
-import com.easy.request.parse.req.Resolver;
-import com.easy.request.parse.req.apache.PartModel;
-import com.easy.request.parse.res.Convertor;
+import com.easy.request.parse.request.RequestParamChecker;
+import com.easy.request.parse.request.Resolver;
+import com.easy.request.parse.request.apache.PartModel;
+import com.easy.request.parse.response.Convertor;
 import com.easy.request.util.StringUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -47,23 +47,23 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class EasyInvocation implements InvocationHandler {
+public class EasyRequestInvocation implements InvocationHandler {
 
     public static final String SERIAL_VERSION_UID = "serialVersionUID";
     public static final int CLASS_DEEP = 3;
 
     private final Class<?> interfaceClass;
-    private final EasyInterceptor[] interceptors;
+    private final Interceptor[] interceptors;
     private final EasyRequestClient client;
     private final RequestParamChecker checker;
     private final EasyClientRequestFactory clientRequestFactory;
     private final ResolverFactory resolverFactory;
     private final ConvertorFactory convertorFactory;
 
-    public EasyInvocation(Class<?> interfaceClass, EasyRequestClient client,
-                          EasyClientRequestFactory clientRequestFactory, RequestParamChecker checker,
-                          ResolverFactory resolverFactory, ConvertorFactory convertorFactory,
-                          EasyInterceptor... interceptors) {
+    public EasyRequestInvocation(Class<?> interfaceClass, EasyRequestClient client,
+                                 EasyClientRequestFactory clientRequestFactory, RequestParamChecker checker,
+                                 ResolverFactory resolverFactory, ConvertorFactory convertorFactory,
+                                 Interceptor... interceptors) {
         if (interfaceClass == null || !interfaceClass.isInterface()) {
             throw new RuntimeException("interface error");
         }
@@ -133,14 +133,14 @@ public class EasyInvocation implements InvocationHandler {
             } else {
                 easyResponse.setEntity(null);
             }
-            call(easyInterceptor -> easyInterceptor.onReceive(request, easyResponse));
+            call(interceptor -> interceptor.onReceive(request, easyResponse));
             return easyResponse;
         }
         if (HttpURLConnection.HTTP_OK != easyResponse.getCode()) {
             throw new RuntimeException(easyResponse.getCode() + " " + easyResponse.getReason() + " " + IOUtils.toString(inputStream, StandardCharsets.UTF_8));
         }
         Object entity = available == 0 ? null : dealResponse(request, inputStream, type);
-        call(easyInterceptor -> easyInterceptor.onReceive(request, entity));
+        call(interceptor -> interceptor.onReceive(request, entity));
         return entity;
     }
 
@@ -366,7 +366,7 @@ public class EasyInvocation implements InvocationHandler {
     }
 
     public EasyResponse<InputStream> sendRequest(EasyClientRequest request, Object requestEntity) {
-        call(easyInterceptor -> easyInterceptor.beforeRequest(request, requestEntity));
+        call(interceptor -> interceptor.beforeRequest(request, requestEntity));
         EnumMethod method = request.getMethod();
         if (EnumMethod.GET.equals(method)) {
             return this.client.get(request);
@@ -429,9 +429,9 @@ public class EasyInvocation implements InvocationHandler {
         }
     }
 
-    private void call(Consumer<EasyInterceptor> consumer) {
+    private void call(Consumer<Interceptor> consumer) {
         if (interceptors != null) {
-            for (EasyInterceptor interceptor : interceptors) {
+            for (Interceptor interceptor : interceptors) {
                 consumer.accept(interceptor);
             }
         }

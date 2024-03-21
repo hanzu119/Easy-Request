@@ -1,4 +1,4 @@
-package com.easy.request.parse.res;
+package com.easy.request.parse.response;
 
 import com.alibaba.fastjson.JSON;
 import com.easy.request.client.EasyClientRequest;

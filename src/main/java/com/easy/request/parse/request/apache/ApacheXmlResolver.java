@@ -1,7 +1,7 @@
-package com.easy.request.parse.req.apache;
+package com.easy.request.parse.request.apache;
 
 import com.easy.request.client.EasyClientRequest;
-import com.easy.request.parse.req.Resolver;
+import com.easy.request.parse.request.Resolver;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.apache.http.entity.ContentType;

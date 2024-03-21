@@ -1,4 +1,4 @@
-package com.easy.request.parse.req.apache;
+package com.easy.request.parse.request.apache;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

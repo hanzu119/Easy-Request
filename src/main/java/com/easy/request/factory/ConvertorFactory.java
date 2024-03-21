@@ -1,10 +1,10 @@
 package com.easy.request.factory;
 
 import com.easy.request.constant.EnumResScheme;
-import com.easy.request.parse.res.Convertor;
-import com.easy.request.parse.res.JsonConvertor;
-import com.easy.request.parse.res.StringConvertor;
-import com.easy.request.parse.res.XmlConvertor;
+import com.easy.request.parse.response.Convertor;
+import com.easy.request.parse.response.JsonConvertor;
+import com.easy.request.parse.response.StringConvertor;
+import com.easy.request.parse.response.XmlConvertor;
 
 public class ConvertorFactory {
 
