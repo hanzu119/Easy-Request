@@ -1,10 +1,15 @@
 package com.easy.request.client;
 
+import com.easy.request.model.EasyResponse;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
-import org.apache.http.client.methods.*;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.impl.client.BasicCookieStore;
@@ -69,7 +74,7 @@ public class ApacheClient implements EasyRequestClient {
         }
     }
 
-    public InputStream execute(HttpRequestBase requestBase) {
+    public EasyResponse<InputStream> execute(HttpRequestBase requestBase) {
         try {
             HttpResponse response = this.httpClient.execute(requestBase);
             StatusLine statusLine = response.getStatusLine();
@@ -77,14 +82,18 @@ public class ApacheClient implements EasyRequestClient {
                 throw new RuntimeException(statusLine.getStatusCode() + " " + statusLine.getReasonPhrase() + " " +
                         IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8));
             }
-            return response.getEntity().getContent();
+            EasyResponse<InputStream> easyResponse = new EasyResponse<>();
+            easyResponse.setCode(statusLine.getStatusCode());
+            easyResponse.setReason(statusLine.getReasonPhrase());
+            easyResponse.setEntity(response.getEntity().getContent());
+            return easyResponse;
         } catch (IOException e) {
             throw new RuntimeException("io error", e);
         }
     }
 
     @Override
-    public InputStream post(EasyClientRequest request, Object requestEntity) {
+    public EasyResponse<InputStream> post(EasyClientRequest request, Object requestEntity) {
         URIBuilder builder = convert(request);
         HttpPost post = new HttpPost(builder.toString());
         request.getHeaders().forEach(post::addHeader);
@@ -93,7 +102,7 @@ public class ApacheClient implements EasyRequestClient {
     }
 
     @Override
-    public InputStream put(EasyClientRequest request, Object requestEntity) {
+    public EasyResponse<InputStream> put(EasyClientRequest request, Object requestEntity) {
         URIBuilder builder = convert(request);
         HttpPut put = new HttpPut(builder.toString());
         request.getHeaders().forEach(put::addHeader);
@@ -102,7 +111,7 @@ public class ApacheClient implements EasyRequestClient {
     }
 
     @Override
-    public InputStream delete(EasyClientRequest request) {
+    public EasyResponse<InputStream> delete(EasyClientRequest request) {
         URIBuilder builder = convert(request);
         HttpDelete delete = new HttpDelete(builder.toString());
         request.getHeaders().forEach(delete::addHeader);
@@ -110,7 +119,7 @@ public class ApacheClient implements EasyRequestClient {
     }
 
     @Override
-    public InputStream get(EasyClientRequest request) {
+    public EasyResponse<InputStream> get(EasyClientRequest request) {
         URIBuilder builder = convert(request);
         HttpGet get = new HttpGet(builder.toString());
         request.getHeaders().forEach(get::addHeader);
