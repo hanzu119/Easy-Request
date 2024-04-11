@@ -5,12 +5,11 @@ import com.ionrhythm.easy.request.client.EasyClientRequest;
 public interface Resolver {
 
     /**
-     * 请求数据的处理方法
      *
-     * @param request
-     * @param requestBody
+     * @param request request
+     * @param requestBody requestBody
      *
-     * @return
+     * @return entity
      */
     Object resolve(EasyClientRequest request, Object requestBody);
 }
