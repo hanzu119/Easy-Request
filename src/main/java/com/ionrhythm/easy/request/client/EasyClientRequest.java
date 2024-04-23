@@ -8,27 +8,39 @@ import java.util.Map;
 
 public interface EasyClientRequest {
 
-    void setMethod(EnumMethod method);
-
     default String getProtocol() {
         return null;
     }
+
+    void setProtocol(String protocol);
 
     default EnumReqScheme getReqScheme() {
         return null;
     }
 
+    void setReqScheme(EnumReqScheme requestScheme);
+
     default String getRequestCharset() {
         return null;
     }
 
+    void setRequestCharset(String requestCharset);
+
     long getTimeout();
+
+    void setTimeout(long timeout);
 
     String getHost();
 
+    void setHost(String host);
+
     Integer getPort();
 
+    void setPort(Integer port);
+
     String getPath();
+
+    void setPath(String path);
 
     Map<String, String> getParams();
 
@@ -44,31 +56,19 @@ public interface EasyClientRequest {
         return null;
     }
 
+    void setContentType(String contentType);
+
     EnumResScheme getResScheme();
-
-    String getResponseCharset();
-
-    EnumMethod getMethod();
-
-    void setResponseCharset(String charset);
 
     void setResScheme(EnumResScheme resScheme);
 
-    void setContentType(String contentType);
+    String getResponseCharset();
 
-    void setReqScheme(EnumReqScheme requestScheme);
+    void setResponseCharset(String charset);
 
-    void setRequestCharset(String requestCharset);
+    EnumMethod getMethod();
 
-    void setTimeout(long timeout);
-
-    void setProtocol(String protocol);
-
-    void setHost(String host);
-
-    void setPort(Integer port);
-
-    void setPath(String path);
+    void setMethod(EnumMethod method);
 
     Boolean getRecordOrigin();
 

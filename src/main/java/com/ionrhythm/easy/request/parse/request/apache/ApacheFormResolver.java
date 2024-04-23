@@ -14,10 +14,10 @@ import java.util.List;
 
 public class ApacheFormResolver implements Resolver {
 
+    private static ApacheFormResolver INSTANCE;
+
     private ApacheFormResolver() {
     }
-
-    private static ApacheFormResolver INSTANCE;
 
     public static ApacheFormResolver getInstance() {
         if (INSTANCE == null) {

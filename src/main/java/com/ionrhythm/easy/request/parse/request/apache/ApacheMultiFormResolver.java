@@ -25,11 +25,10 @@ import java.util.List;
 public class ApacheMultiFormResolver implements Resolver {
 
     private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd-HH-mm-ss.SSS";
+    private static ApacheMultiFormResolver INSTANCE;
 
     private ApacheMultiFormResolver() {
     }
-
-    private static ApacheMultiFormResolver INSTANCE;
 
     public static ApacheMultiFormResolver getInstance() {
         if (INSTANCE == null) {

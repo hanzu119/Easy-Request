@@ -148,7 +148,7 @@
                 <version>1.5</version>
                 <configuration>
                     <!--   没有配置环境变量，可知道GnuPG路径 -->
-                    <executable>C:/Program Files (x86)/GnuPG/bin/gpg.exe</executable>
+                    <executable>gpg</executable>
                 </configuration>
                 <executions>
                     <execution>

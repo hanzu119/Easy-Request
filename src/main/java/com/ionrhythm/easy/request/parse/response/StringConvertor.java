@@ -10,10 +10,10 @@ import java.nio.charset.Charset;
 
 public class StringConvertor implements Convertor {
 
+    private static StringConvertor INSTANCE;
+
     private StringConvertor() {
     }
-
-    private static StringConvertor INSTANCE;
 
     public static StringConvertor getInstance() {
         if (INSTANCE == null) {

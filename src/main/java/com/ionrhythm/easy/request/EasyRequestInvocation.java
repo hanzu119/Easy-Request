@@ -93,6 +93,141 @@ public class EasyRequestInvocation implements InvocationHandler {
         this.interceptors = interceptors;
     }
 
+    private static void dealEasyHeader(EasyClientRequest request, Object arg, HEADER header) {
+        Map<String, String> headers = request.getHeaders();
+        if (arg instanceof String || arg instanceof Number || arg instanceof Boolean) {
+            fillHeader(headers, null, arg, header);
+        } else if (arg instanceof Map) {
+            Map<?, ?> map = (Map<?, ?>) arg;
+            map.forEach((k, v) -> headers.put(String.valueOf(k), String.valueOf(v)));
+        } else {
+            List<Field> fields = collectField(arg, header.ignoreSerialNumber());
+            for (Field field : fields) {
+                try {
+                    String fieldName = field.getName();
+                    HEADER fieldAnnotation = field.getAnnotation(HEADER.class);
+                    Object value = field.get(arg);
+                    if (value != null) {
+                        fillHeader(headers, fieldName, value, fieldAnnotation);
+                    }
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException("illegal access.", e);
+                }
+            }
+        }
+    }
+
+    private static void dealEasyPathValue(EasyClientRequest request, Object arg, PathVariable pathVariable) {
+        String name = StringUtils.defaultIfBlank(pathVariable.name(), pathVariable.value());
+        if (StringUtils.isBlank(name)) {
+            throw new RuntimeException("@EasyPathVariable's name or value can't be blank at the same time.");
+        }
+        request.setPath(StringUtils.replacePlaceholder(name, request.getPath(), String.valueOf(arg)));
+    }
+
+    private static void dealEasyHost(EasyClientRequest request, Object nHost, HOST host) {
+        String value = host.value();
+        String old = request.getHost();
+        request.setHost(StringUtils.replacePlaceholder(value, old, String.valueOf(nHost)));
+    }
+
+    private static void fillHeader(Map<String, String> headers, String key, Object arg, HEADER header) {
+        if (header != null) {
+            if (header.isIgnore()) {
+                return;
+            }
+            if (StringUtils.isNotBlank(header.name())) {
+                key = header.name();
+            }
+            key = StringUtils.defaultIfBlank(header.value(), key);
+        }
+        if (StringUtils.isBlank(key)) {
+            if (arg instanceof Map) {
+                Map<?, ?> map = (Map<?, ?>) arg;
+                map.forEach((k, v) -> headers.put(String.valueOf(k), String.valueOf(v)));
+                return;
+            } else {
+                throw new RuntimeException("illegal header.");
+            }
+        }
+        headers.put(key, String.valueOf(arg));
+    }
+
+    private static void dealEasyHookParam(EasyClientRequest request, Object arg, HookParam annotation) {
+        String name = StringUtils.defaultIfBlank(annotation.name(), annotation.value());
+        Map<String, Object> hookParams = request.getHookParams();
+        if (hookParams == null) {
+            return;
+        }
+        if (StringUtils.isNotBlank(name)) {
+            hookParams.put(name, arg);
+        } else {
+            throw new RuntimeException("name or value not be appointed.");
+        }
+    }
+
+    private static List<Field> collectField(Object paramObject, boolean ignoreSerialNumber) {
+        Class<?> objectClass = paramObject.getClass();
+        Field[] fields = objectClass.getDeclaredFields();
+        for (int i = 0; i < CLASS_DEEP; i++) {
+            objectClass = objectClass.getSuperclass();
+            if (objectClass == null) {
+                break;
+            }
+            Field[] supplierFields = objectClass.getDeclaredFields();
+            int supperLength = supplierFields.length;
+            if (supperLength != 0) {
+                int newLength = fields.length + supperLength;
+                Field[] old = fields;
+                fields = new Field[newLength];
+                for (int j = 0; j < newLength; j++) {
+                    if (j < supperLength) {
+                        fields[j] = supplierFields[j];
+                    } else {
+                        fields[j] = old[j - supperLength];
+                    }
+                }
+            }
+        }
+        return Arrays.stream(fields)
+                .filter(field -> !ignoreSerialNumber || !SERIAL_VERSION_UID.equals(field.getName()))
+                .peek(field -> field.setAccessible(true))
+                .collect(Collectors.toList());
+    }
+
+    private static void fillRequestByHttp(EasyClientRequest request, HTTP http) {
+        EnumProtocol protocol = http.protocol();
+        request.setProtocol(protocol.code);
+        String host = request.getHost();
+        host = StringUtils.defaultIfBlank(StringUtils.defaultIfBlank(http.host(), http.value()), host);
+        if (StringUtils.isBlank(host)) {
+            throw new RuntimeException("host can't be blank.");
+        }
+        request.setHost(host);
+        Integer port = request.getPort();
+        if (port == null) {
+            request.setPort(-1);
+        }
+        int newPort = http.port();
+        if (newPort > 0) {
+            request.setPort(newPort);
+        }
+    }
+
+    private static void dealFixedRequestParam(RequestParam requestParam, Map<String, String> params) {
+        if (requestParam == null) {
+            return;
+        }
+        String[] names = requestParam.name();
+        String[] values = requestParam.fixedValue();
+        if (names.length != values.length) {
+            throw new RuntimeException("names' array length must same as values' length.");
+        }
+        for (int i = 0; i < names.length; i++) {
+            params.put(names[i], values[i]);
+        }
+    }
+
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         EasyClientRequest request = clientRequestFactory.build();
@@ -197,79 +332,6 @@ public class EasyRequestInvocation implements InvocationHandler {
         }
     }
 
-    private static void dealEasyHeader(EasyClientRequest request, Object arg, HEADER header) {
-        Map<String, String> headers = request.getHeaders();
-        if (arg instanceof String || arg instanceof Number || arg instanceof Boolean) {
-            fillHeader(headers, null, arg, header);
-        } else if (arg instanceof Map) {
-            Map<?, ?> map = (Map<?, ?>) arg;
-            map.forEach((k, v) -> headers.put(String.valueOf(k), String.valueOf(v)));
-        } else {
-            List<Field> fields = collectField(arg, header.ignoreSerialNumber());
-            for (Field field : fields) {
-                try {
-                    String fieldName = field.getName();
-                    HEADER fieldAnnotation = field.getAnnotation(HEADER.class);
-                    Object value = field.get(arg);
-                    if (value != null) {
-                        fillHeader(headers, fieldName, value, fieldAnnotation);
-                    }
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException("illegal access.", e);
-                }
-            }
-        }
-    }
-
-    private static void dealEasyPathValue(EasyClientRequest request, Object arg, PathVariable pathVariable) {
-        String name = StringUtils.defaultIfBlank(pathVariable.name(), pathVariable.value());
-        if (StringUtils.isBlank(name)) {
-            throw new RuntimeException("@EasyPathVariable's name or value can't be blank at the same time.");
-        }
-        request.setPath(StringUtils.replacePlaceholder(name, request.getPath(), String.valueOf(arg)));
-    }
-
-    private static void dealEasyHost(EasyClientRequest request, Object nHost, HOST host) {
-        String value = host.value();
-        String old = request.getHost();
-        request.setHost(StringUtils.replacePlaceholder(value, old, String.valueOf(nHost)));
-    }
-
-    private static void fillHeader(Map<String, String> headers, String key, Object arg, HEADER header) {
-        if (header != null) {
-            if (header.isIgnore()) {
-                return;
-            }
-            if (StringUtils.isNotBlank(header.name())) {
-                key = header.name();
-            }
-            key = StringUtils.defaultIfBlank(header.value(), key);
-        }
-        if (StringUtils.isBlank(key)) {
-            if (arg instanceof Map) {
-                Map<?, ?> map = (Map<?, ?>) arg;
-                map.forEach((k, v) -> headers.put(String.valueOf(k), String.valueOf(v)));
-                return;
-            } else {
-                throw new RuntimeException("illegal header.");
-            }
-        }
-        headers.put(key, String.valueOf(arg));
-    }
-
-    private static void dealEasyHookParam(EasyClientRequest request, Object arg, HookParam annotation) {
-        String name = StringUtils.defaultIfBlank(annotation.name(), annotation.value());
-        Map<String, Object> hookParams = request.getHookParams();
-        if (hookParams == null) {
-            return;
-        }
-        if (StringUtils.isNotBlank(name)) {
-            hookParams.put(name, arg);
-        } else {
-            throw new RuntimeException("name or value not be appointed.");
-        }
-    }
-
     private void dealEasyRequestParam(Map<String, String> urlParams, Object arg, RequestParam annotation) {
         if (arg instanceof String || arg instanceof Number || arg instanceof Boolean) {
             fillUrlParams(urlParams, null, arg, annotation);
@@ -291,35 +353,6 @@ public class EasyRequestInvocation implements InvocationHandler {
                 }
             }
         }
-    }
-
-    private static List<Field> collectField(Object paramObject, boolean ignoreSerialNumber) {
-        Class<?> objectClass = paramObject.getClass();
-        Field[] fields = objectClass.getDeclaredFields();
-        for (int i = 0; i < CLASS_DEEP; i++) {
-            objectClass = objectClass.getSuperclass();
-            if (objectClass == null) {
-                break;
-            }
-            Field[] supplierFields = objectClass.getDeclaredFields();
-            int supperLength = supplierFields.length;
-            if (supperLength != 0) {
-                int newLength = fields.length + supperLength;
-                Field[] old = fields;
-                fields = new Field[newLength];
-                for (int j = 0; j < newLength; j++) {
-                    if (j < supperLength) {
-                        fields[j] = supplierFields[j];
-                    } else {
-                        fields[j] = old[j - supperLength];
-                    }
-                }
-            }
-        }
-        return Arrays.stream(fields)
-                .filter(field -> !ignoreSerialNumber || !SERIAL_VERSION_UID.equals(field.getName()))
-                .peek(field -> field.setAccessible(true))
-                .collect(Collectors.toList());
     }
 
     private void fillUrlParams(Map<String, String> urlParams, String key, Object arg, RequestParam requestParam) {
@@ -393,39 +426,6 @@ public class EasyRequestInvocation implements InvocationHandler {
         HTTP methodHttp = method.getAnnotation(HTTP.class);
         if (methodHttp != null) {
             fillRequestByHttp(request, methodHttp);
-        }
-    }
-
-    private static void fillRequestByHttp(EasyClientRequest request, HTTP http) {
-        EnumProtocol protocol = http.protocol();
-        request.setProtocol(protocol.code);
-        String host = request.getHost();
-        host = StringUtils.defaultIfBlank(StringUtils.defaultIfBlank(http.host(), http.value()), host);
-        if (StringUtils.isBlank(host)) {
-            throw new RuntimeException("host can't be blank.");
-        }
-        request.setHost(host);
-        Integer port = request.getPort();
-        if (port == null) {
-            request.setPort(-1);
-        }
-        int newPort = http.port();
-        if (newPort > 0) {
-            request.setPort(newPort);
-        }
-    }
-
-    private static void dealFixedRequestParam(RequestParam requestParam, Map<String, String> params) {
-        if (requestParam == null) {
-            return;
-        }
-        String[] names = requestParam.name();
-        String[] values = requestParam.fixedValue();
-        if (names.length != values.length) {
-            throw new RuntimeException("names' array length must same as values' length.");
-        }
-        for (int i = 0; i < names.length; i++) {
-            params.put(names[i], values[i]);
         }
     }
 

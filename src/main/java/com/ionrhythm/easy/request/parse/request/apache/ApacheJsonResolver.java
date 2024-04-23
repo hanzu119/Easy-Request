@@ -8,10 +8,10 @@ import org.apache.http.entity.StringEntity;
 
 public class ApacheJsonResolver implements Resolver {
 
+    private static ApacheJsonResolver INSTANCE;
+
     private ApacheJsonResolver() {
     }
-
-    private static ApacheJsonResolver INSTANCE;
 
     public static ApacheJsonResolver getInstance() {
         if (INSTANCE == null) {

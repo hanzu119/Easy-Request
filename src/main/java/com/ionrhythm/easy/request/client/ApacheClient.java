@@ -12,9 +12,9 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.concurrent.FutureCallback;
-import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
 
 import java.io.IOException;
@@ -30,14 +30,18 @@ import java.util.stream.Collectors;
 public class ApacheClient implements EasyRequestClient {
 
     private final CloseableHttpClient httpClient;
+    private final PoolingHttpClientConnectionManager poolingHttpClientConnectionManager;
 
     public ApacheClient() {
-        httpClient = HttpClientBuilder.create().setDefaultCookieStore(new BasicCookieStore()).build();
+        poolingHttpClientConnectionManager = new PoolingHttpClientConnectionManager();
+        poolingHttpClientConnectionManager.setMaxTotal(1000);
+        poolingHttpClientConnectionManager.setDefaultMaxPerRoute(1000);
+        httpClient = HttpClientBuilder.create().setConnectionManager(poolingHttpClientConnectionManager).build();
     }
 
-    public ApacheClient(CloseableHttpClient client) {
-        this.httpClient = client;
-    }
+//    public ApacheClient(CloseableHttpClient client) {
+//        this.httpClient = client;
+//    }
 
     private URIBuilder convert(EasyClientRequest request) {
         URIBuilder builder = new URIBuilder().setScheme(request.getProtocol())
@@ -52,25 +56,6 @@ public class ApacheClient implements EasyRequestClient {
                     .collect(Collectors.toList()));
         }
         return builder;
-    }
-
-    static class FutureAdapter implements FutureCallback<HttpResponse> {
-        private final CompletableFuture<HttpResponse> cf = new CompletableFuture<>();
-
-        @Override
-        public void completed(HttpResponse httpResponse) {
-            cf.complete(httpResponse);
-        }
-
-        @Override
-        public void failed(Exception e) {
-            cf.completeExceptionally(e);
-        }
-
-        @Override
-        public void cancelled() {
-            cf.cancel(true);
-        }
     }
 
     public EasyResponse<InputStream> execute(HttpRequestBase requestBase) {
@@ -129,8 +114,28 @@ public class ApacheClient implements EasyRequestClient {
     public void shutdown() {
         try {
             this.httpClient.close();
+            this.poolingHttpClientConnectionManager.close();
         } catch (IOException e) {
             throw new RuntimeException("failed to shutdown http client.", e);
+        }
+    }
+
+    static class FutureAdapter implements FutureCallback<HttpResponse> {
+        private final CompletableFuture<HttpResponse> cf = new CompletableFuture<>();
+
+        @Override
+        public void completed(HttpResponse httpResponse) {
+            cf.complete(httpResponse);
+        }
+
+        @Override
+        public void failed(Exception e) {
+            cf.completeExceptionally(e);
+        }
+
+        @Override
+        public void cancelled() {
+            cf.cancel(true);
         }
     }
 

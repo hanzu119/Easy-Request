@@ -1,10 +1,10 @@
 package com.ionrhythm.easy.request.parse.response;
 
-import com.ionrhythm.easy.request.client.EasyClientRequest;
-import com.ionrhythm.easy.request.constant.EasyCodes;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
+import com.ionrhythm.easy.request.client.EasyClientRequest;
+import com.ionrhythm.easy.request.constant.EasyCodes;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,14 +16,13 @@ import java.lang.reflect.Type;
  */
 public class XmlConvertor implements Convertor {
 
+    private static XmlConvertor INSTANCE;
     private final XmlMapper xmlMapper = new XmlMapper();
 
     private XmlConvertor() {
         this.xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.xmlMapper.enable(ToXmlGenerator.Feature.WRITE_XML_DECLARATION);
     }
-
-    private static XmlConvertor INSTANCE;
 
     public static XmlConvertor getInstance() {
         if (INSTANCE == null) {

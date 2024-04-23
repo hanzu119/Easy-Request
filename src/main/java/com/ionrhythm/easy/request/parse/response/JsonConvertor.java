@@ -11,10 +11,10 @@ import java.nio.charset.Charset;
 
 public class JsonConvertor implements Convertor {
 
+    private static JsonConvertor INSTANCE;
+
     private JsonConvertor() {
     }
-
-    private static JsonConvertor INSTANCE;
 
     public static JsonConvertor getInstance() {
         if (INSTANCE == null) {
